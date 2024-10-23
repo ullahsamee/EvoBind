@@ -45,5 +45,7 @@ def mutate_sequence(peptide_sequence, sequence_scores):
                         c_indices = [i for i, x in enumerate(new_seq) if x == 'C']
                         if abs(c_indices[0] - c_indices[1]) > 1:
                             return new_seq
+                        else:
+                            seeds.append(new_seq)
 
         seeds.append(new_seq)

@@ -25,7 +25,7 @@ MSA=$DATADIR/$RECEPTORID'.a3m'
 
 #########Step2: Design binder#########
 ##### AF2 CONFIGURATION #####
-PARAM=$BASE'/src/AF2/'
+PARAM='../../EvoBind/src/AF2/'
 PRESET='full_dbs' #Choose preset model configuration - no ensembling (full_dbs) and (reduced_dbs) or 8 model ensemblings (casp14).
 MAX_RECYCLES=8 #max_recycles (default=3)
 MODEL_NAME='model_1' #model_1_ptm
@@ -43,5 +43,5 @@ python3 $BASE/src/mc_design.py \
 --max_recycles=$MAX_RECYCLES \
 --num_iterations=$NITER \
 --predict_only=False \
---disulfide-offset=True \
+--disulfide_offset=True \
 #--cyclic_offset=1

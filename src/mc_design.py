@@ -216,9 +216,21 @@ def predict_function(peptide_sequence, feature_dict, output_dir, model_runners,
           processed_feature_dict['cyclic_offset']=np.expand_dims(cyclic_offset_array,axis=0)
 
       if FLAGS.disulfide_offset:
-          pos = new_feature_dict['residue_index']
-          disulfide_offset_array = FCP(peptide_sequence, [i for i, x in enumerate(peptide_sequence) if x == 'C'])
-          processed_feature_dict['disulfide_offset'] = np.expand_dims(disulfide_offset_array, axis=0)
+            cysteine_positions = [i for i, x in enumerate(peptide_sequence) if x == 'C']
+            print(peptide_sequence, cysteine_positions)
+            if len(cysteine_positions) == 2:
+                C1 = [cysteine_positions[0]]
+                C2 = [cysteine_positions[1]]
+            elif len(cysteine_positions) % 2 == 0:
+                C1 = cysteine_positions[::2]
+                C2 = cysteine_positions[1::2]
+            else:
+                raise ValueError("Invalid number of cysteines for disulfide bridges.")
+
+            disulfide_offset_array = FCP(peptide_sequence, C1, C2)
+            processed_feature_dict['disulfide_offset'] = np.expand_dims(disulfide_offset_array, axis=0)
+
+
 
       t_0 = time.time()
       prediction_result = model_runner.predict(processed_feature_dict)
@@ -432,35 +444,75 @@ def optimise_binder(
 
     save_design(unrelaxed_protein, output_dir, str(num_iter), feature_dict['seq_length'][0])
 
-def FCP(Seq, C1):
-    # parameter ‘Seq’ denotes amino acid sequence of the input cyclic peptide.
-    # parameters’ C1
-    ′ and ‘C2
-    ’
-    are the start indices and the end indices of disulfide bridges, such as C1 = [3, 9] and C2 = [6, 15] denote two amino
-    acids at index 3 and index 6 form one disulfide bridge, and two amino acids at index 9 and index 15 form another disulfide bridge.
-    v = [i for i in range(len(Seq))]
-    # Let M be a |v|∗|v| array of minimum distances initialized to infinity, and P be a |v|∗|v| array to save the shortest path.
-    M = np.full((len(v), len(v)), np.inf)
-    P = np.zeros((len(v), len(v)))
+def FCP(Seq, C1, C2, cyclic=False):
+    """
+    Constructs the CycPOEM offset matrix for a given peptide sequence.
+
+    Parameters:
+    - Seq (str): Amino acid sequence of the peptide.
+    - C1 (list): List of start indices for disulfide bridges.
+    - C2 (list): List of end indices for disulfide bridges.
+    - cyclic (bool): Indicates if the peptide is cyclic. Default is True.
+
+    Returns:
+    - M (numpy.ndarray): Distance matrix.
+    - S (numpy.ndarray): Sign matrix.
+    - O (numpy.ndarray): Signed offset matrix (Weighted_Sign).
+    """
+    v = list(range(len(Seq)))
+    n = len(v)
+    
+    # Initialize distance matrix M and sign matrix S
+    M = np.full((n, n), np.inf)  # Distance matrix
+    S = np.zeros((n, n))         # Sign matrix
+
+    # Set distances and signs for the same amino acids
     for i in v:
         M[i, i] = 0
-        P[i] = v
-    for i in v[:len(Seq)-1]:  # two adjacent amino acids
+        S[i, i] = 0
+
+    # Connect adjacent amino acids with directionality
+    for i in v[:-1]:
+        # Peptide bond from i to i+1
         M[i, i + 1] = 1
+        S[i, i + 1] = 1    # N->C direction
+        # Reverse direction
         M[i + 1, i] = 1
-    M[0, len(Seq)-1] = 1
-    M[len(Seq)-1, 0] = 1
-    for i in range(len(C1)):  # disulfide bridge formation
-        M[C1[i], C1[(i+1) % len(C1)]] = 1
-        M[C1[(i+1) % len(C1)], C1[i]] = 1
+        S[i + 1, i] = -1   # C->N direction
+
+    if cyclic:
+        # Connect the ends to make it cyclic with directionality
+        M[0, n - 1] = 1
+        S[0, n - 1] = 1      # N->C direction (assuming head-to-tail)
+        M[n - 1, 0] = 1
+        S[n - 1, 0] = -1     # C->N direction
+
+    # Add disulfide bridges (symmetrical, sign = 0)
+    for start, end in zip(C1, C2):
+        M[start, end] = 1
+        S[start, end] = 0
+        M[end, start] = 1
+        S[end, start] = 0
+
+    # Floyd-Warshall algorithm with sign handling
     for k in v:
         for i in v:
             for j in v:
                 if M[i, k] + M[k, j] < M[i, j]:
                     M[i, j] = M[i, k] + M[k, j]
-                    P[i, j] = k
-    return M
+                    S[i, j] = S[i, k] + S[k, j]
+                elif M[i, k] + M[k, j] == M[i, j]:
+                    # If same distance, prefer path with minimal absolute sign
+                    if abs(S[i, k] + S[k, j]) < abs(S[i, j]):
+                        S[i, j] = S[i, k] + S[k, j]
+
+    # Generate the signed offset matrix
+    # Here, we multiply the distance by the sign to incorporate directionality
+    O = np.zeros((n, n))
+    mask = M != np.inf
+    O[mask] = S[mask]
+    print(f"Sequence:{Seq} \n with offset matrix {O}")
+    return O
 
 ######################MAIN###########################
 def main(argv):
