@@ -97,6 +97,9 @@ flags.DEFINE_string('peptide_sequence', None,
 flags.DEFINE_integer('cyclic_offset', None,
     'Use a cyclic offset for the peptide (1).')
 
+flags.DEFINE_bool('disulfide_offset', None,
+    'Use a disulfide offset for the peptide (1).')
+
 ##### databases flags #####
 flags.DEFINE_string('data_dir', None,
     'Path to directory of supporting data.')
@@ -211,6 +214,11 @@ def predict_function(peptide_sequence, feature_dict, output_dir, model_runners,
           peptide_cyclic_offset_array = feature_dict['peptide_cyclic_offset_array']
           cyclic_offset_array[-len(peptide_cyclic_offset_array):,-len(peptide_cyclic_offset_array):]=peptide_cyclic_offset_array
           processed_feature_dict['cyclic_offset']=np.expand_dims(cyclic_offset_array,axis=0)
+
+      if FLAGS.disulfide_offset:
+          pos = new_feature_dict['residue_index']
+          disulfide_offset_array = FCP(peptide_sequence, [i for i, x in enumerate(peptide_sequence) if x == 'C'])
+          processed_feature_dict['disulfide_offset'] = np.expand_dims(disulfide_offset_array, axis=0)
 
       t_0 = time.time()
       prediction_result = model_runner.predict(processed_feature_dict)
@@ -424,6 +432,36 @@ def optimise_binder(
 
     save_design(unrelaxed_protein, output_dir, str(num_iter), feature_dict['seq_length'][0])
 
+def FCP(Seq, C1):
+    # parameter ‘Seq’ denotes amino acid sequence of the input cyclic peptide.
+    # parameters’ C1
+    ′ and ‘C2
+    ’
+    are the start indices and the end indices of disulfide bridges, such as C1 = [3, 9] and C2 = [6, 15] denote two amino
+    acids at index 3 and index 6 form one disulfide bridge, and two amino acids at index 9 and index 15 form another disulfide bridge.
+    v = [i for i in range(len(Seq))]
+    # Let M be a |v|∗|v| array of minimum distances initialized to infinity, and P be a |v|∗|v| array to save the shortest path.
+    M = np.full((len(v), len(v)), np.inf)
+    P = np.zeros((len(v), len(v)))
+    for i in v:
+        M[i, i] = 0
+        P[i] = v
+    for i in v[:len(Seq)-1]:  # two adjacent amino acids
+        M[i, i + 1] = 1
+        M[i + 1, i] = 1
+    M[0, len(Seq)-1] = 1
+    M[len(Seq)-1, 0] = 1
+    for i in range(len(C1)):  # disulfide bridge formation
+        M[C1[i], C1[(i+1) % len(C1)]] = 1
+        M[C1[(i+1) % len(C1)], C1[i]] = 1
+    for k in v:
+        for i in v:
+            for j in v:
+                if M[i, k] + M[k, j] < M[i, j]:
+                    M[i, j] = M[i, k] + M[k, j]
+                    P[i, j] = k
+    return M
+
 ######################MAIN###########################
 def main(argv):
 
@@ -442,6 +480,10 @@ def main(argv):
         model_config.model.embeddings_and_evoformer.cyclic_offset=True
     else:
         model_config.model.embeddings_and_evoformer.cyclic_offset=None
+    if FLAGS.disulfide_offset:
+        model_config.model.embeddings_and_evoformer.disulfide_offset=True
+    else:
+        model_config.model.embeddings_and_evoformer.disulfide_offset=None
     model_config.data.eval.num_ensemble = num_ensemble
     model_config.data.common.num_recycle = FLAGS.max_recycles
     model_config.model.num_recycle = FLAGS.max_recycles

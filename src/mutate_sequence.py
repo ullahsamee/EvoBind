@@ -39,6 +39,11 @@ def mutate_sequence(peptide_sequence, sequence_scores):
                 if new_seq in searched_seqs:
                     continue
                 else:
-                    return new_seq
+                    # Check if the sequence contains exactly two 'C's
+                    if new_seq.count('C') == 2:
+                        # Ensure the two 'C's are not adjacent to each other
+                        c_indices = [i for i, x in enumerate(new_seq) if x == 'C']
+                        if abs(c_indices[0] - c_indices[1]) > 1:
+                            return new_seq
 
         seeds.append(new_seq)

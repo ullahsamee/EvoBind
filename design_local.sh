@@ -1,4 +1,3 @@
-
 #############PARAMETERS#############
 BASE=. #Change this depending on your local path
 DATADIR=$BASE/data/test #The output (designs) will also be written here
@@ -44,4 +43,5 @@ python3 $BASE/src/mc_design.py \
 --max_recycles=$MAX_RECYCLES \
 --num_iterations=$NITER \
 --predict_only=False \
+--disulfide-offset=True \
 #--cyclic_offset=1
