@@ -42,7 +42,7 @@ It is possible to run EvoBind2 online in the [Google colab here](https://colab.r
 # Computational requirements
 Before beginning the process of setting up this pipeline on your local system, make sure you have adequate computational resources. Make sure you have an **available GPU** as this will speed up the prediction process substantially compared to using a CPU. EvoBind2 assumes you have NVIDIA GPUs on your system, readily available. A Linux-based system is assumed.
 
-# Setup
+# Setup (Don't use the setup.sh script for installation instead manual)
 To setup this pipeline, clone this github repository:
 ```
 cd /home/asus/biotools
@@ -82,8 +82,6 @@ cd data
 wget http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz --no-check-certificate
 tar -zxvf uniclust30_2018_08_hhsuite.tar.gz
 ```
-This script fetches the [AlphaFold2 parameters](https://storage.googleapis.com/alphafold/alphafold_params_2021-07-14.tar), installs a conda env and downloads [uniclust30_2018_08](http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz) which is used to generate the receptor MSA.
-
 # Design binders
 To design binders the following needs to be specified: \
 **Receptor fasta sequence** \
