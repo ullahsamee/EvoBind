@@ -45,12 +45,42 @@ Before beginning the process of setting up this pipeline on your local system, m
 # Setup
 To setup this pipeline, clone this github repository:
 ```
+cd /home/asus/biotools
 git clone https://github.com/patrickbryant1/EvoBind.git
+cd EvoBind
 ```
 \
 Then do
 ```
-bash setup.sh
+mamba env create -f environment.yml
+conda activate evobind
+```
+\
+Then manually Download AF2 parameters
+```
+cd ./src/AF2
+mkdir params
+cd params
+wget https://storage.googleapis.com/alphafold/alphafold_params_2021-07-14.tar
+tar -xf alphafold_params_2021-07-14.tar
+rm alphafold_params_2021-07-14.tar
+cd ../../../
+```
+\
+Then HHblits (requires cmake)
+```
+git clone https://github.com/soedinglab/hh-suite.git
+mkdir -p hh-suite/build && cd hh-suite/build
+cmake -DCMAKE_INSTALL_PREFIX=. ..
+make -j 4 && make install
+cd ../..
+```
+\
+Finally Download uniclust30_2018_08
+```
+cd data
+wget http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz --no-check-certificate
+tar -zxvf uniclust30_2018_08_hhsuite.tar.gz
 ```
 This script fetches the [AlphaFold2 parameters](https://storage.googleapis.com/alphafold/alphafold_params_2021-07-14.tar), installs a conda env and downloads [uniclust30_2018_08](http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz) which is used to generate the receptor MSA.
 
