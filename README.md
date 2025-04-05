@@ -53,7 +53,7 @@ cd EvoBind
 Then do
 ```
 mamba env create -f environment.yml
-conda activate evobind
+mamba activate evobind
 ```
 \
 Then manually Download AF2 parameters
