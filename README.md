@@ -79,7 +79,7 @@ cd ../..
 Finally Download uniclust30_2018_08
 ```
 cd data
-wget http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_2018_08_hhsuite.tar.gz --no-check-certificate
+wget https://storage.googleapis.com/alphafold-databases/casp14_versions/uniclust30_2018_08_hhsuite.tar.gz
 tar -zxvf uniclust30_2018_08_hhsuite.tar.gz
 ```
 # Design binders
